@@ -2,9 +2,35 @@ use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
 };
+use windows::Win32::{
+    Foundation::BOOL,
+    Graphics::Gdi::{EnumDisplayDevicesW, DISPLAY_DEVICEW},
+};
+
+// https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumdisplaydevicesw?redirectedfrom=MSDN
+// https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumdisplaysettingsw?redirectedfrom=MSDN
+// https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-changedisplaysettingsw?redirectedfrom=MSDN
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let mut idevnum = 0;
+
+    loop {
+        let display_device: *mut DISPLAY_DEVICEW = &mut DISPLAY_DEVICEW {
+            cb: std::mem::size_of::<DISPLAY_DEVICEW>() as u32,
+            ..Default::default()
+        };
+
+        match unsafe { EnumDisplayDevicesW(None, idevnum, display_device, 0) } {
+            BOOL(0) => break,
+            _ => unsafe {
+                println!("{:?}", *display_device);
+            },
+        };
+
+        idevnum += 1;
+    }
+
     tauri::Builder::default()
         .setup(|app| {
             let pause_i = MenuItem::with_id(app, "pause", "Pause", true, None::<&str>)?;
